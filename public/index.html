@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Crestview Academy · School System</title>
+<title>BRIGHTWAY INTERTIONAL SCHOOLS</title>
 <link rel="icon" href="/logo.svg">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Figtree:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -53,12 +53,12 @@ function logout(){localStorage.removeItem('tok');token=null;render()}
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 function render(){
  if(!token){root.innerHTML=`<div class="login"><form id="lf"><img src="/logo.svg" alt="">
- <h1>Crestview Academy</h1><p>Sign in to the school office</p>
+ <h1>BRIGHTWAY INTERNATIONAL SCHOOLS</h1><p>Sign in to the school office</p>
  <label for="pw" style="display:block;text-align:left">Admin password</label><input id="pw" type="password" required>
  <p class="err" id="le"></p><button class="btn" style="width:100%">Sign in</button></form></div>`;
  $('#lf').onsubmit=async e=>{e.preventDefault();try{const j=await api('login',{method:'POST',body:JSON.stringify({password:$('#pw').value})});token=j.token;localStorage.setItem('tok',token);render()}catch(x){$('#le').textContent=x.message}};return}
  const nav=['dashboard',...Object.keys(SCHEMA)].map(k=>`<button class="${k===view?'on':''}" data-v="${k}">${k==='dashboard'?'Dashboard':SCHEMA[k].title}</button>`).join('');
- root.innerHTML=`<div class="app"><aside><div class="brand"><img src="/logo.svg" alt=""><b>Crestview<br>Academy</b></div>${nav}<button class="out" id="lo">Sign out</button></aside><main id="m"></main></div>`;
+ root.innerHTML=`<div class="app"><aside><div class="brand"><img src="/logo.svg" alt=""><b>Bightway International<br>Schools</b></div>${nav}<button class="out" id="lo">Sign out</button></aside><main id="m"></main></div>`;
  document.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>{view=b.dataset.v;render()});$('#lo').onclick=logout;
  view==='dashboard'?dash():page(view)}
 async function dash(){
