@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Crestview Academy · School System</title>
+<link rel="icon" href="/logo.svg">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Figtree:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--navy:#12355B;--gold:#E3A72F;--leaf:#3FA37A;--paper:#F7F3E8;--ink:#1c2430;--line:#d9d3c0;--card:#fffdf6}
+*{box-sizing:border-box}body{margin:0;font:16px/1.5 Figtree,system-ui,sans-serif;background:var(--paper);color:var(--ink)}
+h1,h2,h3{font-family:Fraunces,Georgia,serif;margin:0}
+button,input,select{font:inherit}
+.login{min-height:100vh;display:grid;place-items:center;padding:20px}
+.login form{background:var(--card);border:1px solid var(--line);padding:32px;border-radius:10px;width:min(380px,100%);text-align:center}
+.login img{width:90px}.login h1{color:var(--navy);margin:10px 0 4px}
+input,select{width:100%;padding:10px;border:1px solid var(--line);border-radius:6px;background:#fff}
+.btn{background:var(--navy);color:#fff;border:0;padding:10px 16px;border-radius:6px;cursor:pointer;font-weight:600}
+.btn:hover{background:#0c2744}.btn.gold{background:var(--gold);color:#2b1d00}.btn.del{background:none;color:#a33;padding:2px 8px}
+:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+.app{display:grid;grid-template-columns:230px 1fr;min-height:100vh}
+aside{background:var(--navy);color:#fff;padding:20px 14px;position:sticky;top:0;height:100vh}
+aside .brand{display:flex;gap:10px;align-items:center;margin-bottom:24px}aside .brand img{width:44px}
+aside .brand b{font-family:Fraunces,serif;font-size:18px;line-height:1.1}
+aside button{display:block;width:100%;text-align:left;background:none;border:0;color:#cfd9e6;padding:10px 12px;border-radius:6px;cursor:pointer}
+aside button.on,aside button:hover{background:rgba(255,255,255,.12);color:#fff}
+aside .out{margin-top:20px;color:var(--gold)}
+main{padding:28px;max-width:1000px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin:18px 0}
+.stat{background:var(--card);border:1px solid var(--line);border-left:5px solid var(--gold);padding:14px;border-radius:6px}
+.stat b{font:700 30px Fraunces,serif;color:var(--navy);display:block}
+form.add{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;align-items:end;margin:16px 0;background:var(--card);padding:14px;border:1px solid var(--line);border-radius:8px}
+label{font-size:14px;font-weight:600}
+.wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;background:var(--card)}
+th,td{padding:10px;border-bottom:1px solid var(--line);text-align:left}th{background:#ece6d1}
+.empty{padding:24px;text-align:center;color:#6b6652}.err{color:#a33;font-size:14px}
+@media(max-width:760px){.app{grid-template-columns:1fr}aside{position:static;height:auto;display:flex;flex-wrap:wrap;gap:4px}aside .brand{width:100%;margin-bottom:6px}aside button{width:auto}}
+</style></head><body>
+<div id="root"></div>
+<script>
+const SCHEMA={
+ students:{title:'Students',f:[['name','Full name'],['grade','Class','text'],['guardian','Guardian'],['phone','Phone']]},
+ teachers:{title:'Teachers',f:[['name','Full name'],['subject','Subject'],['phone','Phone'],['email','Email']]},
+ classes:{title:'Classes',f:[['name','Class name'],['teacher','Class teacher'],['room','Room']]},
+ grades:{title:'Grades',f:[['student','Student'],['subject','Subject'],['term','Term'],['score','Score (0-100)','number']]},
+ attendance:{title:'Attendance',f:[['date','Date','date'],['student','Student'],['status','Status','select:Present,Absent,Late']]}
+};
+let token=localStorage.getItem('tok'),view='dashboard',cache={};
+const $=s=>document.querySelector(s),root=$('#root');
+async function api(path,opt={}){
+ const r=await fetch('/api/'+path,{...opt,headers:{'Content-Type':'application/json',Authorization:'Bearer '+token}});
+ if(r.status===401&&path!=='login'){logout();return}
+ const j=await r.json();if(!r.ok)throw new Error(j.error||'Request failed');return j}
+function logout(){localStorage.removeItem('tok');token=null;render()}
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function render(){
+ if(!token){root.innerHTML=`<div class="login"><form id="lf"><img src="/logo.svg" alt="">
+ <h1>Crestview Academy</h1><p>Sign in to the school office</p>
+ <label for="pw" style="display:block;text-align:left">Admin password</label><input id="pw" type="password" required>
+ <p class="err" id="le"></p><button class="btn" style="width:100%">Sign in</button></form></div>`;
+ $('#lf').onsubmit=async e=>{e.preventDefault();try{const j=await api('login',{method:'POST',body:JSON.stringify({password:$('#pw').value})});token=j.token;localStorage.setItem('tok',token);render()}catch(x){$('#le').textContent=x.message}};return}
+ const nav=['dashboard',...Object.keys(SCHEMA)].map(k=>`<button class="${k===view?'on':''}" data-v="${k}">${k==='dashboard'?'Dashboard':SCHEMA[k].title}</button>`).join('');
+ root.innerHTML=`<div class="app"><aside><div class="brand"><img src="/logo.svg" alt=""><b>Crestview<br>Academy</b></div>${nav}<button class="out" id="lo">Sign out</button></aside><main id="m"></main></div>`;
+ document.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>{view=b.dataset.v;render()});$('#lo').onclick=logout;
+ view==='dashboard'?dash():page(view)}
+async function dash(){
+ const m=$('#m');m.innerHTML='<h2>Dashboard</h2><p>Loading…</p>';
+ const keys=Object.keys(SCHEMA),d=await Promise.all(keys.map(k=>api(k)));
+ const att=d[4],pres=att.filter(a=>a.status==='Present').length;
+ const g=d[3],avg=g.length?Math.round(g.reduce((s,x)=>s+ +x.score,0)/g.length):'–';
+ m.innerHTML=`<h2>Dashboard</h2><div class="stats">
+ <div class="stat"><b>${d[0].length}</b>Students</div><div class="stat"><b>${d[1].length}</b>Teachers</div>
+ <div class="stat"><b>${d[2].length}</b>Classes</div><div class="stat"><b>${avg}</b>Average score</div>
+ <div class="stat"><b>${att.length?Math.round(pres/att.length*100)+'%':'–'}</b>Attendance rate</div></div>
+ <p>Add students, teachers and classes from the menu, then record grades and daily attendance.</p>`}
+async function page(k){
+ const S=SCHEMA[k],m=$('#m');
+ const inputs=S.f.map(([n,l,t])=>t&&t.startsWith('select:')?`<div><label>${l}<select name="${n}">${t.slice(7).split(',').map(o=>`<option>${o}</option>`).join('')}</select></label></div>`:`<div><label>${l}<input name="${n}" type="${t||'text'}" required ${t==='number'?'min=0 max=100':''}></label></div>`).join('');
+ m.innerHTML=`<h2>${S.title}</h2><form class="add" id="af">${inputs}<button class="btn gold">Add ${S.title.replace(/s$/,'').toLowerCase()}</button></form><p class="err" id="e"></p><div class="wrap" id="tb">Loading…</div>`;
+ $('#af').onsubmit=async e=>{e.preventDefault();try{await api(k,{method:'POST',body:JSON.stringify(Object.fromEntries(new FormData(e.target)))});page(k)}catch(x){$('#e').textContent=x.message}};
+ const rows=await api(k);
+ $('#tb').innerHTML=rows.length?`<table><thead><tr>${S.f.map(f=>`<th>${f[1]}</th>`).join('')}<th></th></tr></thead><tbody>${rows.map(r=>`<tr>${S.f.map(f=>`<td>${esc(r[f[0]])}</td>`).join('')}<td><button class="btn del" data-id="${r.id}">Delete</button></td></tr>`).join('')}</tbody></table>`:`<div class="empty">No ${S.title.toLowerCase()} yet. Use the form above to add the first one.</div>`;
+ document.querySelectorAll('.del').forEach(b=>b.onclick=async()=>{if(confirm('Delete this record?')){await api(k+'?id='+b.dataset.id,{method:'DELETE'});page(k)}})}
+render();
+</script></body></html>
